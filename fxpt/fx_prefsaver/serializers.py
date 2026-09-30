@@ -13,7 +13,7 @@ try:
 except:
     m = None
 
-from com import message
+from .com import message
 
 
 class SerializerBase(object):

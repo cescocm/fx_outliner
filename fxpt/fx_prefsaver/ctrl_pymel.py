@@ -1,8 +1,8 @@
 from functools import partial
 
-from ctrl_base import CtrlBase
-from pstypes import UIType, Attr
-from com import message
+from .ctrl_base import CtrlBase
+from .pstypes import UIType, Attr
+from .com import message
 
 
 class PMCtrlBase(CtrlBase):

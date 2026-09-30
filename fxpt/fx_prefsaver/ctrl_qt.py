@@ -18,9 +18,9 @@ except ImportError:
         _PySide = None
 
 
-from ctrl_base import CtrlBase
-from pstypes import UIType, Attr
-from com import message
+from .ctrl_base import CtrlBase
+from .pstypes import UIType, Attr
+from .com import message
 
 
 class QtCtrlBase(CtrlBase):
@@ -72,7 +72,7 @@ class QtCtrlStrGetter(QtCtrlBase):
         self.defaultValueGlobal = ''
 
     def ctrl2DataProcedure(self):
-        self.setAttr(self.attr, unicode(self.ctrlGetter()))
+        self.setAttr(self.attr, str(self.ctrlGetter()))
 
 
 class QtCtrlLineEdit(QtCtrlStrGetter):
@@ -212,7 +212,7 @@ class QtCtrlComboBoxEditable(QtCtrlComboBox):
         itemCount = self.control.count()
         if itemCount == 0:
             return
-        self.setAttr(Attr.Items, [unicode(self.control.itemText(i)) for i in range(itemCount)])
+        self.setAttr(Attr.Items, [str(self.control.itemText(i)) for i in range(itemCount)])
 
     def data2CtrlProcedure(self):
         super(QtCtrlComboBoxEditable, self).data2CtrlProcedure()
@@ -340,7 +340,7 @@ class TreeIndexSelector(SelectorBase):
 
         selectionModel = self.getSelectionModel()
 
-        for r in xrange(model.rowCount(parentIndex)):
+        for r in range(model.rowCount(parentIndex)):
             for c in range(model.columnCount(parentIndex)):
                 childIndex = model.index(r, c, parentIndex)
                 childPath = parentPath + '|{0},{1}'.format(childIndex.row(), childIndex.column())

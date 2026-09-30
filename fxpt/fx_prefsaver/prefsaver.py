@@ -228,22 +228,22 @@ Available control types and their acceptable defaults:
 
 # region imports
 
-from pstypes import UIType
+from .pstypes import UIType
 
-import ctrl_var
-import ctrl_qt
+from . import ctrl_var
+from . import ctrl_qt
 
 try:
-    import ctrl_maya
+    from . import ctrl_maya
 except ImportError:
     ctrl_maya = None
 
 try:
-    import ctrl_pymel
+    from . import ctrl_pymel
 except ImportError:
     ctrl_pymel = None
 
-from com import message
+from .com import message
 
 
 # endregion

@@ -77,7 +77,7 @@ def getMayaMainWindowPtr():
 
 
 def getMayaQMainWindow(ptr):
-    return shiboken2.wrapInstance(long(ptr), QtWidgets.QMainWindow)
+    return shiboken2.wrapInstance(int(ptr), QtWidgets.QMainWindow)
 
 
 class SearchResultsDialog(QtWidgets.QDialog):
@@ -479,7 +479,7 @@ class FXOutlinerUI:
             selectionList = om.MSelectionList()
             mObject = om.MObject()
 
-            for key in sceneNodes.iterkeys():
+            for key in sceneNodes:
                 nodeName, nodeType, nodePath = sceneNodes[key]
                 selectionList.clear()
                 selectionList.add(key)
@@ -491,7 +491,7 @@ class FXOutlinerUI:
                             sceneNodes[nodePath][IDX_PATH]
                         )  # add shape type to its' transform type string
                     sceneNodes[key] = None
-            for key in sceneNodes.iterkeys():
+            for key in sceneNodes:
                 if sceneNodes[key]:
                     sceneNodesFiltered[key] = sceneNodes[key]
         else:
@@ -561,13 +561,13 @@ class FXOutlinerUI:
 
     def ui_waitWindowShow(self):
         if not self.ui_WND_wait:
-            self.ui_WND_wait = QtGui.QWidget()
-            layout = QtGui.QHBoxLayout()
+            self.ui_WND_wait = QtWidgets.QWidget()
+            layout = QtWidgets.QHBoxLayout()
             layout.setContentsMargins(0, 0, 0, 0)
             self.ui_WND_wait.setLayout(layout)
-            label = QtGui.QLabel('Searching...')
+            label = QtWidgets.QLabel('Searching...')
             label.setAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter)
-            label.setFrameStyle(QtGui.QFrame.Panel | QtGui.QFrame.Raised)
+            label.setFrameStyle(QtWidgets.QFrame.Panel | QtWidgets.QFrame.Raised)
             layout.addWidget(label)
             self.ui_WND_wait.setWindowFlags(QtCore.Qt.Popup)
 
@@ -576,8 +576,8 @@ class FXOutlinerUI:
         parentY = parentTopLeft.y()
         parentWidth = self.ui_QT_TBL_searchResult.rect().width()
 
-        waitWndWidth = parentWidth * WAIT_WND_WIDTH_RATIO
-        waitWndX = parentX + (parentWidth - waitWndWidth) / 2
+        waitWndWidth = int(parentWidth * WAIT_WND_WIDTH_RATIO)
+        waitWndX = parentX + (parentWidth - waitWndWidth) // 2
 
         self.ui_WND_wait.move(waitWndX, parentY + WAIT_WND_TOP_OFFSET)
         self.ui_WND_wait.resize(waitWndWidth, WAIT_WND_HEIGHT)
@@ -896,7 +896,7 @@ class SearchResultModel(QtCore.QSortFilterProxyModel):
         self.model.insertRows(0, len(sceneNodes))
 
         i = 0
-        for fullPathname in sceneNodes.iterkeys():
+        for fullPathname in sceneNodes:
             cell1 = self.model.index(i, 0)
             cell2 = self.model.index(i, 1)
             cell3 = self.model.index(i, 2)

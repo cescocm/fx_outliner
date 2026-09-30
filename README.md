@@ -4,8 +4,8 @@ Standalone extraction of the **FX Outliner** tool for Autodesk Maya, taken from
 [cescocm/fxpt](https://github.com/cescocm/fxpt) (itself based on
 [theetcher/fxpt](https://github.com/theetcher/fxpt) by Eugene Davydenko).
 
-Only `fx_outliner` and the fxpt modules it depends on are included. The files
-are copied unchanged from upstream commit `d40c571`, and the `fxpt` package
+Only `fx_outliner` and the fxpt modules it depends on are included, copied
+from upstream commit `d40c571` and then ported to Python 3. The `fxpt` package
 layout is kept so the original imports still resolve.
 
 ## Contents
@@ -20,9 +20,9 @@ fxpt/
 
 ## Requirements
 
-- Autodesk Maya with **Python 2** (Maya 2017–2020, or later versions started in
-  Python 2 mode). The code uses Python 2 syntax (`long`, implicit relative
-  imports), so it will not run under Python 3 without porting.
+- Autodesk Maya with **Python 3 and PySide2** (Maya 2022–2024).
+  Maya 2025+ ships PySide6, which is not supported yet (the tool uses
+  `QRegExp`, removed in Qt 6).
 - Windows paths: the tool builds its resource paths with `\\` separators.
 
 ## Installation
