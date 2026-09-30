@@ -23,8 +23,9 @@ fxpt/
 - Autodesk Maya 2022 or later (Python 3):
   - Maya 2022–2024 use PySide2.
   - Maya 2025+ use PySide6.
-- Windows, macOS or Linux. The menu item that opens the XML config files in a
-  text editor still works only on Windows (it launches Notepad).
+- Windows, macOS or Linux. The menu items that open the XML config files use
+  Notepad on Windows, the default text editor on macOS (`open -t`) and
+  `xdg-open` on Linux.
 
 The regex search mode uses `QRegularExpression` (PCRE), replacing Qt 5's
 `QRegExp`, so a few advanced patterns may behave differently. The wildcard mode

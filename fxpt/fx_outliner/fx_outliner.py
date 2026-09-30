@@ -3,6 +3,8 @@
 import functools as ft
 import os
 import re
+import subprocess
+import sys
 import xml.etree.ElementTree
 
 import maya.cmds as m
@@ -20,8 +22,6 @@ from fxpt.fx_utils.utils import getFxUtilsDir
 #endregion
 
 #region constants
-
-OS_NAME = os.name
 
 SCRIPT_VERSION = 'v1.5'
 SCRIPT_NAME = 'FX Outliner'
@@ -883,22 +883,36 @@ class FXOutlinerUI:
         mel.eval(cmd)
 
     def openFileInEditor(self, filename, *arg):
-        # this works only on Windows
-        # don't have MacOS or Linux system to test other cases
-        # so if anybody knows how to write this procedure to handle mac or linux please tell me
-        if OS_NAME == 'nt':
-        # os.startfile(filename)
-            os.system('start notepad.exe ' + filename)
+        if not os.path.isfile(filename):
+            self.showOpenFileError(filename, 'File not found.')
+            return
+
+        env = None
+        if sys.platform == 'win32':
+            cmd = ['notepad.exe', filename]
+        elif sys.platform == 'darwin':
+            cmd = ['open', '-t', filename]  # default text editor
         else:
-            m.confirmDialog(
-                title='Error',
-                message='Config file you are looking for:\n' + filename +
-                        "\nSorry, but i don't know how to open this file in editor in your system.",
-                button='Ok',
-                defaultButton='Ok',
-                cancelButton='Ok',
-                icon='critical'
-            )
+            cmd = ['xdg-open', filename]
+            # don't leak Maya's bundled libraries/Qt plugins into the external application
+            env = dict(os.environ)
+            for var in ('LD_LIBRARY_PATH', 'QT_PLUGIN_PATH'):
+                env.pop(var, None)
+
+        try:
+            subprocess.Popen(cmd, env=env)
+        except OSError as e:
+            self.showOpenFileError(filename, 'Cannot run {0}: {1}'.format(cmd[0], e))
+
+    def showOpenFileError(self, filename, reason):
+        m.confirmDialog(
+            title='Error',
+            message='Cannot open file in editor:\n' + filename + '\n' + reason,
+            button='Ok',
+            defaultButton='Ok',
+            cancelButton='Ok',
+            icon='critical'
+        )
 
 
 class SearchResultModel(QtCore.QSortFilterProxyModel):
