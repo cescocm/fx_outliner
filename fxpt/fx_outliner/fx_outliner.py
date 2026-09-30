@@ -725,10 +725,23 @@ class FXOutlinerUI:
             showSetMembersEnable=False,
             selectSetMembersEnable=True
         )
-        ov.filter = m.itemFilter(
-            byType=['lambert', 'particleCloud', 'anisotropic', 'blinn', 'hairTubeShader', 'layeredShader',
-                    'oceanShader', 'phong', 'phongE', 'rampShader', 'shadingMap', 'surfaceShader', 'useBackground',
-                    'envFog', 'fluidShape', 'lightFog', 'volumeFog', 'volumeShader'], text=FILTER_DESC)
+        materialTypes = [
+            'lambert', 'particleCloud', 'anisotropic', 'blinn', 'hairTubeShader', 'layeredShader',
+            'oceanShader', 'phong', 'phongE', 'rampShader', 'shadingMap', 'surfaceShader', 'useBackground',
+            'envFog', 'fluidShape', 'lightFog', 'volumeFog', 'volumeShader',
+            # newer built-in materials
+            'standardSurface',  # Maya 2020+
+            'openPBRSurface',  # Maya 2025.3+
+            'hairPhysicalShader',
+            # hardware/interchange materials from plug-ins bundled with Maya
+            'StingrayPBS', 'ShaderfxShader',  # shaderFXPlugin
+            'GLSLShader',  # glslShader
+            'dx11Shader',  # dx11Shader (Windows)
+            'usdPreviewSurface',  # mayaUsdPlugin
+        ]
+        # skip types unknown to this Maya version or whose plug-in isn't loaded
+        availableTypes = set(m.allNodeTypes())
+        ov.filter = m.itemFilter(byType=[t for t in materialTypes if t in availableTypes], text=FILTER_DESC)
         ov.selectCommand = ft.partial(self.ui_onOutlinerSelectMatTex, ov.selectionConnection)
         self.state.outlinerViews.append(ov)
 
