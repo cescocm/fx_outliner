@@ -6,13 +6,12 @@ Standalone extraction of the **FX Outliner** tool for Autodesk Maya, taken from
 
 Extracted from upstream commit `d40c571`, ported to Python 3 and trimmed down
 to a single self-contained module with no dependencies beyond Maya
-(`maya.cmds`, PySide2/PySide6). The `fxpt` package name is kept, so the tool is
-imported as `fxpt.fx_outliner`.
+(`maya.cmds`, PySide2/PySide6).
 
 ## Contents
 
 ```
-fxpt/fx_outliner/
+fx_outliner/
 ├── fx_outliner.py               the tool
 ├── fx_outliner.json             extra outliner views
 ├── fx_outliner_user_menu.json   extra menu commands (MEL)
@@ -39,23 +38,23 @@ The regex search mode uses `QRegularExpression` (PCRE), replacing Qt 5's
 
 ## Installation
 
-1. Put the folder that *contains* `fxpt/` (this repository's root) on Maya's
+1. Put the folder that *contains* `fx_outliner/` (this repository's root) on Maya's
    `PYTHONPATH`, e.g. in `Maya.env`:
    ```
    PYTHONPATH=C:/path/to/fx_outliner
    ```
 2. In Maya's Python script editor:
    ```python
-   from fxpt.fx_outliner import fx_outliner
+   from fx_outliner import fx_outliner
    fx_outliner.run()
    ```
 
 To bind the tool to F10, run the MEL snippet in
-`fxpt/fx_outliner/setup_hotkey.txt` in Maya's script editor.
+`fx_outliner/setup_hotkey.txt` in Maya's script editor.
 
 ## Configuration
 
-Two JSON files in `fxpt/fx_outliner/` extend the tool. Both can be opened from
+Two JSON files in `fx_outliner/` extend the tool. Both can be opened from
 the tool's menu. Changes apply the next time FX Outliner is opened.
 
 `fx_outliner.json` adds outliner views, listed after the built-in ones:
