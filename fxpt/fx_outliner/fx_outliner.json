@@ -1,0 +1,35 @@
+{
+    "views": [
+        {
+            "name": "Lights",
+            "showShapes": false,
+            "showShapesEnable": true,
+            "showDagOnly": true,
+            "showSetMembers": false,
+            "showSetMembersEnable": false,
+            "expandObjects": false,
+            "selectSetMembersEnable": false,
+            "nodeTypes": [
+                "ambientLight",
+                "directionalLight",
+                "spotLight",
+                "pointLight",
+                "areaLight",
+                "volumeLight"
+            ]
+        },
+        {
+            "name": "Cameras",
+            "showShapes": false,
+            "showShapesEnable": true,
+            "showDagOnly": false,
+            "showSetMembers": false,
+            "showSetMembersEnable": false,
+            "expandObjects": false,
+            "selectSetMembersEnable": false,
+            "nodeTypes": [
+                "camera"
+            ]
+        }
+    ]
+}

@@ -1,0 +1,12 @@
+{
+    "commands": [
+        {
+            "name": "Outliner",
+            "command": "OutlinerWindow;"
+        },
+        {
+            "name": "Custom Polygon Display",
+            "command": "CustomPolygonDisplayOptions;"
+        }
+    ]
+}

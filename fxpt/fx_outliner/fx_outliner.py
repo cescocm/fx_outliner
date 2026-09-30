@@ -1,11 +1,11 @@
 #region imports
 
 import functools as ft
+import json
 import os
 import re
 import subprocess
 import sys
-import xml.etree.ElementTree
 
 import maya.cmds as m
 import maya.mel as mel
@@ -29,8 +29,8 @@ UI_WIN_NAME = 'fx_outliner_win'
 UI_WIN_TITLE = SCRIPT_NAME + ' ' + SCRIPT_VERSION
 SCRIPT_DIR = os.path.dirname(__file__)
 OPT_VAR_NAME = 'fx_outliner'
-XML_OUTLINER_CFG_FILE = os.path.join(SCRIPT_DIR, 'fx_outliner.xml')
-XML_USER_MENU_FILE = os.path.join(SCRIPT_DIR, 'fx_outliner_user_menu.xml')
+CFG_OUTLINER_VIEWS_FILE = os.path.join(SCRIPT_DIR, 'fx_outliner.json')
+CFG_USER_MENU_FILE = os.path.join(SCRIPT_DIR, 'fx_outliner_user_menu.json')
 README_FILE = os.path.join(SCRIPT_DIR, 'readme.txt')
 FILTER_DESC = 'fx_outliner_filter'
 OUTLINER_PANEL = 'FX Outliner Panel'
@@ -177,7 +177,7 @@ class FXOutlinerUI:
             width=22, height=22
         )
 
-        self.loadUserCommandsFromXML()
+        self.loadUserCommandsFromJson()
         self.ui_POP_miscOperations = m.popupMenu(button=1)
         for command in self.userMenu:
             m.menuItem(
@@ -189,12 +189,12 @@ class FXOutlinerUI:
         m.menuItem(
             parent=self.ui_POP_miscOperations,
             label='Open FX Outliner Configuration File',
-            command=ft.partial(self.openFileInEditor, XML_OUTLINER_CFG_FILE)
+            command=ft.partial(self.openFileInEditor, CFG_OUTLINER_VIEWS_FILE)
         )
         m.menuItem(
             parent=self.ui_POP_miscOperations,
             label='Open FX Outliner User Menu Configuration File',
-            command=ft.partial(self.openFileInEditor, XML_USER_MENU_FILE)
+            command=ft.partial(self.openFileInEditor, CFG_USER_MENU_FILE)
         )
         m.menuItem(divider=True)
         m.menuItem(
@@ -273,7 +273,7 @@ class FXOutlinerUI:
             )
 
         lastPrebuildViewIndex = len(self.state.outlinerViews)
-        self.loadOutlinerViewsFromXML()
+        self.loadOutlinerViewsFromJson()
         m.menuItem(
             parent=self.ui_POP_mode,
             divider=True,
@@ -766,49 +766,58 @@ class FXOutlinerUI:
 
         self.state.currentView = self.state.outlinerViews[0]
 
-    def loadOutlinerViewsFromXML(self):
-        if not os.path.exists(XML_OUTLINER_CFG_FILE):
-            return
+    def loadJsonConfig(self, filename, rootKey):
+        """Return the list stored under rootKey in a JSON config file, or [] if the file doesn't exist."""
+        if not os.path.exists(filename):
+            return []
 
-        tree = None
         try:
-            tree = xml.etree.ElementTree.parse(XML_OUTLINER_CFG_FILE)
+            with open(filename, 'r', encoding='utf-8') as f:
+                cfg = json.load(f)
         except Exception as e:
             self.ui_errorDialog(
-                'Error loading user views from file.\nFilename: ' + XML_OUTLINER_CFG_FILE + '\n\n' +
+                'Error loading configuration file.\nFilename: ' + filename + '\n\n' +
                 'Additional exception info:\n' + str(e))
+            return []
 
-        def xmlParseBool(s):
-            if s.lower() in ['true', '1', 't', 'y', 'yes']:
-                return True
-            elif s.lower() in ['false', '0', 'f', 'n', 'no']:
-                return False
-            else:
-                self.ui_errorDialog('Error parsing boolean attribute "' + s + '" from file\n' + XML_OUTLINER_CFG_FILE)
+        items = cfg.get(rootKey, []) if isinstance(cfg, dict) else None
+        if not isinstance(items, list) or not all(isinstance(x, dict) for x in items):
+            self.ui_errorDialog(
+                'Error in configuration file:\n' + filename + '\n\n' +
+                'Expected an object with a "' + rootKey + '" list of objects.')
+            return []
+        return items
 
-        for view in tree.findall('view'):
+    def loadOutlinerViewsFromJson(self):
+        boolKeys = ['showShapes', 'showShapesEnable', 'showDagOnly', 'showSetMembers', 'showSetMembersEnable',
+                    'expandObjects', 'selectSetMembersEnable']
+
+        for view in self.loadJsonConfig(CFG_OUTLINER_VIEWS_FILE, 'views'):
             ov = OutlinerView()
 
-            if 'name' in view.attrib:
-                ov.name = view.attrib['name']
-            if 'showShapes' in view.attrib:
-                ov.showShapes = xmlParseBool(view.attrib['showShapes'])
-            if 'showShapesEnable' in view.attrib:
-                ov.showShapesEnable = xmlParseBool(view.attrib['showShapesEnable'])
-            if 'showDagOnly' in view.attrib:
-                ov.showDagOnly = xmlParseBool(view.attrib['showDagOnly'])
-            if 'showSetMembers' in view.attrib:
-                ov.showSetMembers = xmlParseBool(view.attrib['showSetMembers'])
-            if 'showSetMembersEnable' in view.attrib:
-                ov.showSetMembersEnable = xmlParseBool(view.attrib['showSetMembersEnable'])
-            if 'expandObjects' in view.attrib:
-                ov.expandObjects = xmlParseBool(view.attrib['expandObjects'])
-            if 'selectSetMembersEnable' in view.attrib:
-                ov.selectSetMembersEnable = xmlParseBool(view.attrib['selectSetMembersEnable'])
+            unknownKeys = set(view) - set(boolKeys) - {'name', 'nodeTypes'}
+            if unknownKeys:
+                m.warning('FX Outliner: unknown keys {0} in view "{1}" ({2})'.format(
+                    sorted(unknownKeys), view.get('name', ''), CFG_OUTLINER_VIEWS_FILE))
 
-            filterList = [x.strip(' ,;') for x in view.text.strip().split()]
-            if filterList:
-                ov.filter = m.itemFilter(byType=filterList, text=FILTER_DESC)
+            if 'name' in view:
+                ov.name = str(view['name'])
+            for key in boolKeys:
+                if key in view:
+                    if not isinstance(view[key], bool):
+                        self.ui_errorDialog('Error parsing "' + key + '": expected true or false, got ' +
+                                            json.dumps(view[key]) + '\nFile: ' + CFG_OUTLINER_VIEWS_FILE)
+                        return
+                    setattr(ov, key, view[key])
+
+            nodeTypes = view.get('nodeTypes', [])
+            if not isinstance(nodeTypes, list) or not all(isinstance(x, str) for x in nodeTypes):
+                self.ui_errorDialog('Error parsing "nodeTypes" in view "' + ov.name +
+                                    '": expected a list of node type names\nFile: ' + CFG_OUTLINER_VIEWS_FILE)
+                return
+            nodeTypes = [x.strip() for x in nodeTypes if x.strip()]
+            if nodeTypes:
+                ov.filter = m.itemFilter(byType=nodeTypes, text=FILTER_DESC)
 
             self.state.outlinerViews.append(ov)
 
@@ -870,27 +879,15 @@ class FXOutlinerUI:
                     ov.showSetMembers = viewDict.get('showSetMembers', False)
                     ov.selectSetMembers = viewDict.get('selectSetMembers', False)
 
-    def loadUserCommandsFromXML(self):
-
-        if not os.path.exists(XML_USER_MENU_FILE):
-            return
-
-        tree = None
-        try:
-            tree = xml.etree.ElementTree.parse(XML_USER_MENU_FILE)
-        except Exception as e:
-            self.ui_errorDialog(
-                'Error loading user commands from file.\nFilename: ' + XML_USER_MENU_FILE + '\n\n' +
-                'Additional exception info:\n' + str(e))
-
-        for command in tree.findall('command'):
-
-            if 'name' in command.attrib:
-                commandName = command.attrib['name']
-            else:
-                commandName = 'Unnamed User Command'
-            commandString = command.text.strip()
-            self.userMenu.append((commandName, commandString))
+    def loadUserCommandsFromJson(self):
+        for command in self.loadJsonConfig(CFG_USER_MENU_FILE, 'commands'):
+            commandName = str(command.get('name', 'Unnamed User Command'))
+            commandString = command.get('command', '')
+            if not isinstance(commandString, str) or not commandString.strip():
+                self.ui_errorDialog('Error parsing user command "' + commandName +
+                                    '": "command" must be a non-empty MEL string\nFile: ' + CFG_USER_MENU_FILE)
+                return
+            self.userMenu.append((commandName, commandString.strip()))
 
     def evalMelCommand(self, cmd, *arg):
         mel.eval(cmd)
