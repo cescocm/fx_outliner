@@ -12,12 +12,14 @@ import maya.mel as mel
 import maya.OpenMayaUI as omui
 import maya.OpenMaya as om
 
-from fxpt.qt.pyside import shiboken2, QtWidgets, QtCore, QtGui
-
-from fxpt.fx_prefsaver import prefsaver, serializers
-
-from fxpt.fx_utils.qt_font_creator import QtFontCreator
-from fxpt.fx_utils.utils import getFxUtilsDir
+try:
+    # Maya 2022-2024
+    from PySide2 import QtWidgets, QtCore, QtGui
+    import shiboken2 as shiboken
+except ImportError:
+    # Maya 2025+
+    from PySide6 import QtWidgets, QtCore, QtGui
+    import shiboken6 as shiboken
 
 #endregion
 
@@ -53,9 +55,12 @@ ICON_SORT_NAME = 'sortName.png'
 ICON_SORT_TYPE = 'sortType.png'
 ICON_SORT_REVERSED = 'reverseOrder.png'
 
-qtFontCreator = QtFontCreator(getFxUtilsDir() + '/proggy_tiny_sz.ttf', 12)
-FONT_MONOSPACE_QFONT = qtFontCreator.getQFont()
-FONT_MONOSPACE_LETTER_SIZE = qtFontCreator.getLetterSize('i')
+FONT_MONOSPACE_FILE = os.path.join(SCRIPT_DIR, 'proggy_tiny_sz.ttf')
+FONT_MONOSPACE_SIZE = 12
+
+PREFS_KEY_RESULTS_DLG = 'SearchResultsDialog'
+PREFS_KEY_STATE = 'fx_outliner_state'
+RESULTS_DLG_DEFAULT_GEOM = (200, 200, 500, 700)  # x, y, width, height
 
 WAIT_WND_TOP_OFFSET = 70
 WAIT_WND_HEIGHT = 30
@@ -70,6 +75,20 @@ PATTERN_REGEX = 1
 
 def dummyFunc():
     pass
+
+
+def loadMonospaceFont(filename, size):
+    fontID = QtGui.QFontDatabase.addApplicationFont(filename)
+    fontFamily = QtGui.QFontDatabase.applicationFontFamilies(fontID)[0]
+    return QtGui.QFont(fontFamily, size)
+
+
+def fontLetterWidth(font, letter):
+    return QtGui.QFontMetrics(font).horizontalAdvance(letter)
+
+
+FONT_MONOSPACE_QFONT = loadMonospaceFont(FONT_MONOSPACE_FILE, FONT_MONOSPACE_SIZE)
+FONT_MONOSPACE_LETTER_SIZE = fontLetterWidth(FONT_MONOSPACE_QFONT, 'i')
 
 
 def wildcardToRegex(pattern):
@@ -106,7 +125,7 @@ def getMayaMainWindowPtr():
 
 
 def getMayaQMainWindow(ptr):
-    return shiboken2.wrapInstance(int(ptr), QtWidgets.QMainWindow)
+    return shiboken.wrapInstance(int(ptr), QtWidgets.QMainWindow)
 
 
 class SearchResultsDialog(QtWidgets.QDialog):
@@ -401,9 +420,6 @@ class FXOutlinerUI:
 
         # - - - - - - - - - - - - - - - - -
 
-        self.prefSaver = prefsaver.PrefSaver(serializers.SerializerOptVar(OPT_VAR_NAME))
-        self.prefSaver.addControl(self.searchResultDlg, prefsaver.UIType.PYSIDEWindow, (200, 200, 500, 700))
-        self.prefSaver.addVariable('fx_outliner_state', self.prefsPack, self.prefsUnPack, None)
         self.prefsLoad()
         self.ui_update()
 
@@ -821,11 +837,36 @@ class FXOutlinerUI:
 
             self.state.outlinerViews.append(ov)
 
+    # Prefs are stored as JSON in a Maya optionVar, in the same layout the former fx_prefsaver module used,
+    # so settings saved by older versions still load.
     def prefsSave(self):
-        self.prefSaver.savePrefs()
+        dlg = self.searchResultDlg
+        prefs = {
+            PREFS_KEY_RESULTS_DLG: {'winGeom': [dlg.x(), dlg.y(), dlg.width(), dlg.height()]},
+            PREFS_KEY_STATE: self.prefsPack(),
+        }
+        m.optionVar(stringValue=(OPT_VAR_NAME, json.dumps(prefs, sort_keys=True)))
 
     def prefsLoad(self):
-        self.prefSaver.loadPrefs()
+        prefs = {}
+        if m.optionVar(exists=OPT_VAR_NAME):
+            try:
+                prefs = json.loads(m.optionVar(q=OPT_VAR_NAME))
+            except (TypeError, ValueError) as e:
+                m.warning('FX Outliner: ignoring unreadable preferences in optionVar "{0}": {1}'.format(
+                    OPT_VAR_NAME, e))
+            if not isinstance(prefs, dict):
+                prefs = {}
+
+        dlgPrefs = prefs.get(PREFS_KEY_RESULTS_DLG)
+        geom = dlgPrefs.get('winGeom') if isinstance(dlgPrefs, dict) else None
+        if not (isinstance(geom, list) and len(geom) == 4 and all(isinstance(v, int) for v in geom)):
+            geom = RESULTS_DLG_DEFAULT_GEOM
+        x, y, width, height = geom
+        self.searchResultDlg.move(x, y)
+        self.searchResultDlg.resize(width, height)
+
+        self.prefsUnPack(prefs.get(PREFS_KEY_STATE))
 
     def prefsPack(self):
 

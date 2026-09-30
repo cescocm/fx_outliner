@@ -4,19 +4,25 @@ Standalone extraction of the **FX Outliner** tool for Autodesk Maya, taken from
 [cescocm/fxpt](https://github.com/cescocm/fxpt) (itself based on
 [theetcher/fxpt](https://github.com/theetcher/fxpt) by Eugene Davydenko).
 
-Only `fx_outliner` and the fxpt modules it depends on are included, copied
-from upstream commit `d40c571` and then ported to Python 3. The `fxpt` package
-layout is kept so the original imports still resolve.
+Extracted from upstream commit `d40c571`, ported to Python 3 and trimmed down
+to a single self-contained module with no dependencies beyond Maya
+(`maya.cmds`, PySide2/PySide6). The `fxpt` package name is kept, so the tool is
+imported as `fxpt.fx_outliner`.
 
 ## Contents
 
 ```
-fxpt/
-├── fx_outliner/    the tool (UI, JSON config, icons, hotkey snippet)
-├── fx_prefsaver/   UI-state persistence (window geometry via Maya optionVar)
-├── fx_utils/       utils.py, qt_font_creator.py, proggy_tiny_sz.ttf
-└── qt/             PySide / PySide2 compatibility shim
+fxpt/fx_outliner/
+├── fx_outliner.py               the tool
+├── fx_outliner.json             extra outliner views
+├── fx_outliner_user_menu.json   extra menu commands (MEL)
+├── proggy_tiny_sz.ttf           monospace font for the search results table
+├── icons/                       button icons
+└── setup_hotkey.txt             MEL snippet binding the tool to F10
 ```
+
+Settings (search options, current view, results window position and size)
+are saved as JSON in the `fx_outliner` Maya optionVar.
 
 ## Requirements
 
@@ -44,9 +50,8 @@ The regex search mode uses `QRegularExpression` (PCRE), replacing Qt 5's
    fx_outliner.run()
    ```
 
-`fxpt/fx_outliner/setup_hotkey.txt` has a MEL snippet that binds the tool to
-F10. That snippet uses `from fx_outliner import fx_outliner`; with the layout
-above, change it to `from fxpt.fx_outliner import fx_outliner`.
+To bind the tool to F10, run the MEL snippet in
+`fxpt/fx_outliner/setup_hotkey.txt` in Maya's script editor.
 
 ## Configuration
 
