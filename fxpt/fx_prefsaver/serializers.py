@@ -30,13 +30,16 @@ class SerializerBase(object):
 
 class SerializerFileBase(SerializerBase):
 
+    # binary for pickle; text subclasses (json) override with ''
+    fileModeSuffix = 'b'
+
     def __init__(self, filename):
         super(SerializerFileBase, self).__init__()
         self.filename = filename
 
     def save(self, obj):
         try:
-            f = open(self.filename, 'wb')
+            f = open(self.filename, 'w' + self.fileModeSuffix)
             try:
                 self.saveProcedure(obj, f)
             finally:
@@ -56,7 +59,7 @@ class SerializerFileBase(SerializerBase):
             return {}
 
         try:
-            f = open(self.filename, 'rb')
+            f = open(self.filename, 'r' + self.fileModeSuffix)
             try:
                 obj = self.loadProcedure(f)
             finally:
@@ -88,6 +91,8 @@ class SerializerFilePickle(SerializerFileBase):
 
 # noinspection PyAbstractClass
 class SerializerFileJson(SerializerFileBase):
+
+    fileModeSuffix = ''
 
     def __init__(self, *args, **kwargs):
         super(SerializerFileJson, self).__init__(*args, **kwargs)

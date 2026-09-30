@@ -2,6 +2,7 @@
 
 import functools as ft
 import os
+import re
 import xml.etree.ElementTree
 
 import maya.cmds as m
@@ -28,9 +29,9 @@ UI_WIN_NAME = 'fx_outliner_win'
 UI_WIN_TITLE = SCRIPT_NAME + ' ' + SCRIPT_VERSION
 SCRIPT_DIR = os.path.dirname(__file__)
 OPT_VAR_NAME = 'fx_outliner'
-XML_OUTLINER_CFG_FILE = SCRIPT_DIR + '\\fx_outliner.xml'
-XML_USER_MENU_FILE = SCRIPT_DIR + '\\fx_outliner_user_menu.xml'
-README_FILE = SCRIPT_DIR + '\\readme.txt'
+XML_OUTLINER_CFG_FILE = os.path.join(SCRIPT_DIR, 'fx_outliner.xml')
+XML_USER_MENU_FILE = os.path.join(SCRIPT_DIR, 'fx_outliner_user_menu.xml')
+README_FILE = os.path.join(SCRIPT_DIR, 'readme.txt')
 FILTER_DESC = 'fx_outliner_filter'
 OUTLINER_PANEL = 'FX Outliner Panel'
 
@@ -39,11 +40,11 @@ IDX_TYPE = 1
 IDX_PATH = 2
 
 ICON_SEARCH = 'zoom.png'
-ICON_CASE_SENSITIVE = SCRIPT_DIR + '\\icons\\fx_outliner_case.png'
-ICON_REGEX = SCRIPT_DIR + '\\icons\\fx_outliner_regex.png'
-ICON_SELECT_FOUND = SCRIPT_DIR + '\\icons\\fx_outliner_select.png'
-ICON_TYPE_SEARCH = SCRIPT_DIR + '\\icons\\fx_outliner_type.png'
-ICON_SHAPE = SCRIPT_DIR + '\\icons\\fx_outliner_shape.png'
+ICON_CASE_SENSITIVE = os.path.join(SCRIPT_DIR, 'icons', 'fx_outliner_case.png')
+ICON_REGEX = os.path.join(SCRIPT_DIR, 'icons', 'fx_outliner_regex.png')
+ICON_SELECT_FOUND = os.path.join(SCRIPT_DIR, 'icons', 'fx_outliner_select.png')
+ICON_TYPE_SEARCH = os.path.join(SCRIPT_DIR, 'icons', 'fx_outliner_type.png')
+ICON_SHAPE = os.path.join(SCRIPT_DIR, 'icons', 'fx_outliner_shape.png')
 ICON_POPUP_MENU = 'popupMenuIcon.png'
 ICON_SHOW_SHAPES = 'frameBranch.png'
 ICON_SHOW_SET_MEMBERS = 'out_objectSet.png'
@@ -63,8 +64,36 @@ WAIT_WND_WIDTH_RATIO = 0.7
 #endregion
 
 
+PATTERN_WILDCARD = 0
+PATTERN_REGEX = 1
+
+
 def dummyFunc():
     pass
+
+
+def wildcardToRegex(pattern):
+    # Unanchored conversion matching the old QRegExp.Wildcard filter behaviour:
+    # '*' -> any string, '?' -> any character, '[...]' -> character set, the rest literal.
+    result = []
+    i = 0
+    while i < len(pattern):
+        c = pattern[i]
+        if c == '*':
+            result.append('.*')
+        elif c == '?':
+            result.append('.')
+        elif c == '[':
+            end = pattern.find(']', i + 2)
+            if end == -1:
+                result.append(re.escape(c))
+            else:
+                result.append('[' + pattern[i + 1:end].replace('\\', '\\\\') + ']')
+                i = end
+        else:
+            result.append(re.escape(c))
+        i += 1
+    return ''.join(result)
 
 
 def getMayaMainWindowPtr():
@@ -343,10 +372,8 @@ class FXOutlinerUI:
         # double ui_searchResultTableSetProps cause some props need to be set # double ui_searchResultTableSetProps cause some props need to be set
         self.ui_searchResultTableSetProps()
 
-        self.ui_QT_TBL_searchResult.connect(
-            self.ui_QT_TBL_searchResult.selectionModel(),
-            QtCore.SIGNAL('selectionChanged(QItemSelection, QItemSelection)'),
-            self.ui_QT_TBL_searchResult_selectionChanges
+        self.ui_QT_TBL_searchResult.selectionModel().selectionChanged.connect(
+            lambda *args: self.ui_QT_TBL_searchResult_selectionChanges()
         )
 
         # - - - - - - - - - - - - - - - - -
@@ -459,7 +486,7 @@ class FXOutlinerUI:
         # self.ui_waitWindowShow()
 
         caseSensitivity = QtCore.Qt.CaseSensitive if self.state.searchCase else QtCore.Qt.CaseInsensitive
-        patternType = QtCore.QRegExp.RegExp if self.state.searchRegex else QtCore.QRegExp.Wildcard
+        patternType = PATTERN_REGEX if self.state.searchRegex else PATTERN_WILDCARD
         searchType = self.state.searchType
         searchString = self.ui_getSearchString()
 
@@ -913,7 +940,11 @@ class SearchResultModel(QtCore.QSortFilterProxyModel):
         else:
             self.setFilterKeyColumn(0)
 
-        self.setFilterRegExp(QtCore.QRegExp(searchString, caseSensitivity, patternType))
+        pattern = searchString if patternType == PATTERN_REGEX else wildcardToRegex(searchString)
+        options = QtCore.QRegularExpression.NoPatternOption
+        if caseSensitivity == QtCore.Qt.CaseInsensitive:
+            options = QtCore.QRegularExpression.CaseInsensitiveOption
+        self.setFilterRegularExpression(QtCore.QRegularExpression(pattern, options))
 
 
 class OutlinerState(object):

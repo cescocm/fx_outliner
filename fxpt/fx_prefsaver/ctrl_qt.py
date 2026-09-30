@@ -10,6 +10,12 @@ try:
     import PySide2 as _PySide
 except ImportError:
     try:
+        import PySide6 as _PySide
+    except ImportError:
+        _PySide = None
+
+if _PySide is None:
+    try:
         import PySide as _PySide
         # Qt5 -> Qt4
         _PySide.QtCore.QItemSelection = _PySide.QtGui.QItemSelection

@@ -17,4 +17,8 @@ class QtFontCreator(object):
         return self.qFont
 
     def getLetterSize(self, letter):
-        return QtGui.QFontMetrics(self.qFont).width(letter)
+        metrics = QtGui.QFontMetrics(self.qFont)
+        # QFontMetrics.width() was removed in Qt 6; horizontalAdvance() exists since Qt 5.11
+        if hasattr(metrics, 'horizontalAdvance'):
+            return metrics.horizontalAdvance(letter)
+        return metrics.width(letter)

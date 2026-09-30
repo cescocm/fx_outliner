@@ -20,10 +20,15 @@ fxpt/
 
 ## Requirements
 
-- Autodesk Maya with **Python 3 and PySide2** (Maya 2022–2024).
-  Maya 2025+ ships PySide6, which is not supported yet (the tool uses
-  `QRegExp`, removed in Qt 6).
-- Windows paths: the tool builds its resource paths with `\\` separators.
+- Autodesk Maya 2022 or later (Python 3):
+  - Maya 2022–2024 use PySide2.
+  - Maya 2025+ use PySide6.
+- Windows, macOS or Linux. The menu item that opens the XML config files in a
+  text editor still works only on Windows (it launches Notepad).
+
+The regex search mode uses `QRegularExpression` (PCRE), replacing Qt 5's
+`QRegExp`, so a few advanced patterns may behave differently. The wildcard mode
+(`*`, `?`, `[...]`) still matches anywhere in the name, as before.
 
 ## Installation
 
