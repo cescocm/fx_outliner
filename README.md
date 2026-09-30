@@ -75,8 +75,16 @@ Optional true/false keys (defaults in parentheses): `showShapes` (false),
 `showShapesEnable` (true), `showDagOnly` (true), `showSetMembers` (true),
 `showSetMembersEnable` (true), `expandObjects` (false),
 `selectSetMembersEnable` (false). `nodeTypes` is the list of Maya node types
-the view shows; omit it to show everything. Unknown keys produce a warning in
-the Script Editor.
+the view shows; omit it to show everything. Types that don't exist in the
+running Maya (e.g. Arnold's `ai*` nodes when mtoa isn't loaded) are ignored, and
+a view with none left is skipped with a warning, so reopen FX Outliner after
+loading a plug-in. `selectCommand` (optional) makes selecting an item in the view
+also select the objects it's assigned to when the "select set members" button
+is on: `"materials"` for materials/textures, `"shadingGroups"` for shading
+groups. Unknown keys produce a warning in the Script Editor.
+
+The shipped config includes an **Arnold Materials** view listing the mtoa
+surface and volume shaders.
 
 `fx_outliner_user_menu.json` adds MEL commands to the tool's menu:
 

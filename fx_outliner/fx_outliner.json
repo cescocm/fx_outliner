@@ -30,6 +30,34 @@
             "nodeTypes": [
                 "camera"
             ]
+        },
+        {
+            "name": "Arnold Materials",
+            "showShapesEnable": false,
+            "showDagOnly": false,
+            "showSetMembersEnable": false,
+            "selectSetMembersEnable": true,
+            "selectCommand": "materials",
+            "nodeTypes": [
+                "aiStandardSurface",
+                "aiOpenPBRSurface",
+                "aiStandardHair",
+                "aiStandardVolume",
+                "aiCarPaint",
+                "aiLambert",
+                "aiFlat",
+                "aiToon",
+                "aiLayerShader",
+                "aiMixShader",
+                "aiTwoSided",
+                "aiRaySwitch",
+                "aiShadowMatte",
+                "aiMatte",
+                "aiWireframe",
+                "aiAmbientOcclusion",
+                "aiCurvature",
+                "aiUtility"
+            ]
         }
     ]
 }
