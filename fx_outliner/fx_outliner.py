@@ -807,11 +807,16 @@ class FXOutlinerUI:
     def loadOutlinerViewsFromJson(self):
         boolKeys = ['showShapes', 'showShapesEnable', 'showDagOnly', 'showSetMembers', 'showSetMembersEnable',
                     'expandObjects', 'selectSetMembersEnable']
+        selectCommands = {
+            'materials': self.ui_onOutlinerSelectMatTex,
+            'shadingGroups': self.ui_onOutlinerSelectSG,
+        }
+        availableTypes = None
 
         for view in self.loadJsonConfig(CFG_OUTLINER_VIEWS_FILE, 'views'):
             ov = OutlinerView()
 
-            unknownKeys = set(view) - set(boolKeys) - {'name', 'nodeTypes'}
+            unknownKeys = set(view) - set(boolKeys) - {'name', 'nodeTypes', 'selectCommand'}
             if unknownKeys:
                 m.warning('FX Outliner: unknown keys {0} in view "{1}" ({2})'.format(
                     sorted(unknownKeys), view.get('name', ''), CFG_OUTLINER_VIEWS_FILE))
@@ -833,7 +838,23 @@ class FXOutlinerUI:
                 return
             nodeTypes = [x.strip() for x in nodeTypes if x.strip()]
             if nodeTypes:
-                ov.filter = m.itemFilter(byType=nodeTypes, text=FILTER_DESC)
+                # skip types unknown to this Maya version or whose plug-in (e.g. mtoa) isn't loaded
+                if availableTypes is None:
+                    availableTypes = set(m.allNodeTypes())
+                knownTypes = [x for x in nodeTypes if x in availableTypes]
+                if not knownTypes:
+                    m.warning('FX Outliner: view "{0}" skipped, none of its node types exist '
+                              '(plug-in not loaded?)'.format(ov.name))
+                    continue
+                ov.filter = m.itemFilter(byType=knownTypes, text=FILTER_DESC)
+
+            if 'selectCommand' in view:
+                if view['selectCommand'] not in selectCommands:
+                    self.ui_errorDialog('Error parsing "selectCommand" in view "' + ov.name + '": expected one of ' +
+                                        ', '.join('"' + x + '"' for x in sorted(selectCommands)) + ', got ' +
+                                        json.dumps(view['selectCommand']) + '\nFile: ' + CFG_OUTLINER_VIEWS_FILE)
+                    return
+                ov.selectCommand = ft.partial(selectCommands[view['selectCommand']], ov.selectionConnection)
 
             self.state.outlinerViews.append(ov)
 
